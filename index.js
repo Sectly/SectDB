@@ -25,92 +25,98 @@
  regexp : true, sloppy  : true, vars     : false,
  white  : true
 */
- 
-// Version 1.2.4
+
+// Version 1.4.4
 
 // Setup SectDB name space to return an object with methods
-var SectDB, exports, T;
-(function () {
+var SectDB, exports, T, utils;
+if (typeof window === 'undefined') {
+  utils = {};
+  const { JsonStorage, config } = require("./utils");
+  utils.nodestorage = JsonStorage;
+  utils.config = config;
+}
+(function() {
   'use strict';
   var
-    typeList,     makeTest,     idx,    typeKey,
-    version,      TC,           idpad,  cmax,
-    API,          protectJSON,  each,   eachin,
-    isIndexable,  returnFilter, runFilters,
-    numcharsplit, orderByCol,   run,    intersection,
-    filter,       makeCid,      safeForJson,
+    typeList, makeTest, idx, typeKey,
+    version, TC, idpad, cmax,
+    API, protectJSON, each, eachin,
+    isIndexable, returnFilter, runFilters,
+    numcharsplit, orderByCol, run, intersection,
+    filter, makeCid, safeForJson,
     isRegexp, sortArgs
     ;
-    
-    
-  if ( ! SectDB ){
+
+
+  if (!SectDB) {
     // TC = Counter for SectDB DBs on page, used for unique IDs
     // cmax = size of charnumarray conversion cache
     // idpad = zeros to pad record IDs with
-    version = '2.7';
-    TC      = 1;
-    idpad   = '000000';
-    cmax    = 1000;
-    API     = {};
+    version = '1.4.4';
+    TC = 1;
+    idpad = '000000';
+    cmax = 1000;
+    API = {};
 
     sortArgs = function(args) {
       var v = Array.prototype.slice.call(args);
       return v.sort();
     }
 
-    protectJSON = function ( t ) {
+    protectJSON = function(t) {
       // ****************************************
       // *
       // * Takes: a variable
       // * Returns: the variable if object/array or the parsed variable if JSON
       // *
       // ****************************************  
-      if ( SectDB.isArray( t ) || SectDB.isObject( t ) ){
+      if (SectDB.isArray(t) || SectDB.isObject(t)) {
         return t;
       }
       else {
-        return JSON.parse( t );
+        return JSON.parse(t);
       }
     };
-    
+
     // gracefully stolen from underscore.js
     intersection = function(array1, array2) {
-        return filter(array1, function(item) {
-          return array2.indexOf(item) >= 0;
-        });
+      return filter(array1, function(item) {
+        return array2.indexOf(item) >= 0;
+      });
     };
 
     // gracefully stolen from underscore.js
     filter = function(obj, iterator, context) {
-        var results = [];
-        if (obj == null) return results;
-        if (Array.prototype.filter && obj.filter === Array.prototype.filter) return obj.filter(iterator, context);
-        each(obj, function(value, index, list) {
-          if (iterator.call(context, value, index, list)) results[results.length] = value;
-        });
-        return results;
+      var results = [];
+      if (obj == null) return results;
+      if (Array.prototype.filter && obj.filter === Array.prototype.filter) return obj.filter(iterator, context);
+      each(obj, function(value, index, list) {
+        if (iterator.call(context, value, index, list)) results[results.length] = value;
+      });
+      return results;
     };
-    
+
     isRegexp = function(aObj) {
-        return Object.prototype.toString.call(aObj)==='[object RegExp]';
+      return Object.prototype.toString.call(aObj) === '[object RegExp]';
     }
-    
+
     safeForJson = function(aObj) {
-        var myResult = T.isArray(aObj) ? [] : T.isObject(aObj) ? {} : null;
-        if(aObj===null) return aObj;
-        for(var i in aObj) {
-            myResult[i]  = isRegexp(aObj[i]) ? aObj[i].toString() : T.isArray(aObj[i]) || T.isObject(aObj[i]) ? safeForJson(aObj[i]) : aObj[i];
-        }
-        return myResult;
+      var myResult = T.isArray(aObj) ? [] : T.isObject(aObj) ? {} : null;
+      if (aObj === null) return aObj;
+      for (var i in aObj) {
+        myResult[i] = isRegexp(aObj[i]) ? aObj[i].toString() : T.isArray(aObj[i]) || T.isObject(aObj[i]) ? safeForJson(aObj[i]) : aObj[i];
+      }
+      return myResult;
     }
-    
+
     makeCid = function(aContext) {
-        var myCid = JSON.stringify(aContext);
-        if(myCid.match(/regex/)===null) return myCid;
-        return JSON.stringify(safeForJson(aContext));
+      var myCid = JSON.stringify(aContext);
+      if (myCid.match(/regex/) === null) return myCid;
+      return JSON.stringify(safeForJson(aContext));
     }
-    
-    each = function ( a, fun, u ) {
+
+    each = function(a, fun, u) {
       var r, i, x, y;
       // ****************************************
       // *
@@ -123,17 +129,16 @@ var SectDB, exports, T;
       // * Purpose: Used to loop over arrays
       // *
       // ****************************************  
-      if ( a && ((T.isArray( a ) && a.length === 1) || (!T.isArray( a ))) ){
-        fun( (T.isArray( a )) ? a[0] : a, 0 );
+      if (a && ((T.isArray(a) && a.length === 1) || (!T.isArray(a)))) {
+        fun((T.isArray(a)) ? a[0] : a, 0);
       }
       else {
-        for ( r, i, x = 0, a = (T.isArray( a )) ? a : [a], y = a.length;
-              x < y; x++ )
-        {
+        for (r, i, x = 0, a = (T.isArray(a)) ? a : [a], y = a.length;
+          x < y; x++) {
           i = a[x];
-          if ( !T.isUndefined( i ) || (u || false) ){
-            r = fun( i, x );
-            if ( r === T.EXIT ){
+          if (!T.isUndefined(i) || (u || false)) {
+            r = fun(i, x);
+            if (r === T.EXIT) {
               break;
             }
 
@@ -142,7 +147,7 @@ var SectDB, exports, T;
       }
     };
 
-    eachin = function ( o, fun ) {
+    eachin = function(o, fun) {
       // ****************************************
       // *
       // * Takes:
@@ -153,10 +158,10 @@ var SectDB, exports, T;
       // ****************************************  
       var x = 0, r, i;
 
-      for ( i in o ){
-        if ( o.hasOwnProperty( i ) ){
-          r = fun( o[i], i, x++ );
-          if ( r === T.EXIT ){
+      for (i in o) {
+        if (o.hasOwnProperty(i)) {
+          r = fun(o[i], i, x++);
+          if (r === T.EXIT) {
             break;
           }
         }
@@ -164,34 +169,34 @@ var SectDB, exports, T;
 
     };
 
-    API.extend = function ( m, f ) {
+    API.extend = function(m, f) {
       // ****************************************
       // *
       // * Takes: method name, function
       // * Purpose: Add a custom method to the API
       // *
       // ****************************************  
-      API[m] = function () {
-        return f.apply( this, sortArgs(arguments) );
+      API[m] = function() {
+        return f.apply(this, sortArgs(arguments));
       };
     };
 
-    isIndexable = function ( f ) {
+    isIndexable = function(f) {
       var i;
       // Check to see if record ID
-      if ( T.isString( f ) && /[t][0-9]*[r][0-9]*/i.test( f ) ){
+      if (T.isString(f) && /[t][0-9]*[r][0-9]*/i.test(f)) {
         return true;
       }
       // Check to see if record
-      if ( T.isObject( f ) && f.___id && f.___s ){
+      if (T.isObject(f) && f.___id && f.___s) {
         return true;
       }
 
       // Check to see if array of indexes
-      if ( T.isArray( f ) ){
+      if (T.isArray(f)) {
         i = true;
-        each( f, function ( r ) {
-          if ( !isIndexable( r ) ){
+        each(f, function(r) {
+          if (!isIndexable(r)) {
             i = false;
 
             return SectDB.EXIT;
@@ -203,7 +208,7 @@ var SectDB, exports, T;
       return false;
     };
 
-    runFilters = function ( r, filter ) {
+    runFilters = function(r, filter) {
       // ****************************************
       // *
       // * Takes: takes a record and a collection of filters
@@ -212,28 +217,28 @@ var SectDB, exports, T;
       var match = true;
 
 
-      each( filter, function ( mf ) {
-        switch ( T.typeOf( mf ) ){
+      each(filter, function(mf) {
+        switch (T.typeOf(mf)) {
           case 'function':
             // run function
-            if ( !mf.apply( r ) ){
+            if (!mf.apply(r)) {
               match = false;
               return SectDB.EXIT;
             }
             break;
           case 'array':
             // loop array and treat like a SQL or
-            match = (mf.length === 1) ? (runFilters( r, mf[0] )) :
-              (mf.length === 2) ? (runFilters( r, mf[0] ) ||
-                runFilters( r, mf[1] )) :
-                (mf.length === 3) ? (runFilters( r, mf[0] ) ||
-                  runFilters( r, mf[1] ) || runFilters( r, mf[2] )) :
-                  (mf.length === 4) ? (runFilters( r, mf[0] ) ||
-                    runFilters( r, mf[1] ) || runFilters( r, mf[2] ) ||
-                    runFilters( r, mf[3] )) : false;
-            if ( mf.length > 4 ){
-              each( mf, function ( f ) {
-                if ( runFilters( r, f ) ){
+            match = (mf.length === 1) ? (runFilters(r, mf[0])) :
+              (mf.length === 2) ? (runFilters(r, mf[0]) ||
+                runFilters(r, mf[1])) :
+                (mf.length === 3) ? (runFilters(r, mf[0]) ||
+                  runFilters(r, mf[1]) || runFilters(r, mf[2])) :
+                  (mf.length === 4) ? (runFilters(r, mf[0]) ||
+                    runFilters(r, mf[1]) || runFilters(r, mf[2]) ||
+                    runFilters(r, mf[3])) : false;
+            if (mf.length > 4) {
+              each(mf, function(f) {
+                if (runFilters(r, f)) {
                   match = true;
                 }
               });
@@ -245,7 +250,7 @@ var SectDB, exports, T;
       return match;
     };
 
-    returnFilter = function ( f ) {
+    returnFilter = function(f) {
       // ****************************************
       // *
       // * Takes: filter object
@@ -254,22 +259,22 @@ var SectDB, exports, T;
       // * a SectDB record to see if the record matches a query
       // ****************************************  
       var nf = [];
-      if ( T.isString( f ) && /[t][0-9]*[r][0-9]*/i.test( f ) ){
-        f = { ___id : f };
+      if (T.isString(f) && /[t][0-9]*[r][0-9]*/i.test(f)) {
+        f = { ___id: f };
       }
-      if ( T.isArray( f ) ){
+      if (T.isArray(f)) {
         // if we are working with an array
 
-        each( f, function ( r ) {
+        each(f, function(r) {
           // loop the array and return a filter func for each value
-          nf.push( returnFilter( r ) );
+          nf.push(returnFilter(r));
         });
         // now build a func to loop over the filters and return true if ANY of the filters match
         // This handles logical OR expressions
-        f = function () {
+        f = function() {
           var that = this, match = false;
-          each( nf, function ( f ) {
-            if ( runFilters( that, f ) ){
+          each(nf, function(f) {
+            if (runFilters(that, f)) {
               match = true;
             }
           });
@@ -279,33 +284,33 @@ var SectDB, exports, T;
 
       }
       // if we are dealing with an Object
-      if ( T.isObject( f ) ){
-        if ( T.isObject( f ) && f.___id && f.___s ){
-          f = { ___id : f.___id };
+      if (T.isObject(f)) {
+        if (T.isObject(f) && f.___id && f.___s) {
+          f = { ___id: f.___id };
         }
 
         // Loop over each value on the object to prep match type and match value
-        eachin( f, function ( v, i ) {
+        eachin(f, function(v, i) {
 
           // default match type to IS/Equals
-          if ( !T.isObject( v ) ){
+          if (!T.isObject(v)) {
             v = {
-              'is' : v
+              'is': v
             };
           }
           // loop over each value on the value object  - if any
-          eachin( v, function ( mtest, s ) {
+          eachin(v, function(mtest, s) {
             // s = match type, e.g. is, hasAll, like, etc
             var c = [], looper;
 
             // function to loop and apply filter
             looper = (s === 'hasAll') ?
-              function ( mtest, func ) {
-                func( mtest );
+              function(mtest, func) {
+                func(mtest);
               } : each;
 
             // loop over each test
-            looper( mtest, function ( mtest ) {
+            looper(mtest, function(mtest) {
 
               // su = match success
               // f = match false
@@ -313,18 +318,18 @@ var SectDB, exports, T;
 
 
               // push a function onto the filter collection to do the matching
-              matchFunc = function () {
+              matchFunc = function() {
 
                 // get the value from the record
                 var
-                  mvalue   = this[i],
-                  eqeq     = '==',
-                  bangeq   = '!=',
-                  eqeqeq   = '===',
-                  lt   = '<',
-                  gt   = '>',
-                  lteq   = '<=',
-                  gteq   = '>=',
+                  mvalue = this[i],
+                  eqeq = '==',
+                  bangeq = '!=',
+                  eqeqeq = '===',
+                  lt = '<',
+                  gt = '>',
+                  lteq = '<=',
+                  gteq = '>=',
                   bangeqeq = '!==',
                   r
                   ;
@@ -332,76 +337,75 @@ var SectDB, exports, T;
                 if (typeof mvalue === 'undefined') {
                   return false;
                 }
-                
-                if ( (s.indexOf( '!' ) === 0) && s !== bangeq &&
-                  s !== bangeqeq )
-                {
+
+                if ((s.indexOf('!') === 0) && s !== bangeq &&
+                  s !== bangeqeq) {
                   // if the filter name starts with ! as in '!is' then reverse the match logic and remove the !
                   su = false;
-                  s = s.substring( 1, s.length );
+                  s = s.substring(1, s.length);
                 }
                 // get the match results based on the s/match type
                 /*jslint eqeq : true */
                 r = (
-                  (s === 'regex') ? (mtest.test( mvalue )) : (s === 'lt' || s === lt)
-                  ? (mvalue < mtest)  : (s === 'gt' || s === gt)
-                  ? (mvalue > mtest)  : (s === 'lte' || s === lteq)
-                  ? (mvalue <= mtest) : (s === 'gte' || s === gteq)
-                  ? (mvalue >= mtest) : (s === 'left')
-                  ? (mvalue.indexOf( mtest ) === 0) : (s === 'leftnocase')
-                  ? (mvalue.toLowerCase().indexOf( mtest.toLowerCase() )
-                    === 0) : (s === 'right')
-                  ? (mvalue.substring( (mvalue.length - mtest.length) )
-                    === mtest) : (s === 'rightnocase')
-                  ? (mvalue.toLowerCase().substring(
-                    (mvalue.length - mtest.length) ) === mtest.toLowerCase())
-                    : (s === 'like')
-                  ? (mvalue.indexOf( mtest ) >= 0) : (s === 'likenocase')
-                  ? (mvalue.toLowerCase().indexOf(mtest.toLowerCase()) >= 0)
-                    : (s === eqeqeq || s === 'is')
-                  ? (mvalue ===  mtest) : (s === eqeq)
-                  ? (mvalue == mtest) : (s === bangeqeq)
-                  ? (mvalue !==  mtest) : (s === bangeq)
-                  ? (mvalue != mtest) : (s === 'isnocase')
-                  ? (mvalue.toLowerCase
-                    ? mvalue.toLowerCase() === mtest.toLowerCase()
-                      : mvalue === mtest) : (s === 'has')
-                  ? (T.has( mvalue, mtest )) : (s === 'hasall')
-                  ? (T.hasAll( mvalue, mtest )) : (s === 'contains')
-                  ? (SectDB.isArray(mvalue) && mvalue.indexOf(mtest) > -1) : (
-                    s.indexOf( 'is' ) === -1
-                      && !SectDB.isNull( mvalue )
-                      && !SectDB.isUndefined( mvalue )
-                      && !SectDB.isObject( mtest )
-                      && !SectDB.isArray( mtest )
-                    )
-                  ? (mtest === mvalue[s])
-                    : (T[s] && T.isFunction( T[s] )
-                    && s.indexOf( 'is' ) === 0)
-                  ? T[s]( mvalue ) === mtest
-                    : (T[s] && T.isFunction( T[s] ))
-                  ? T[s]( mvalue, mtest ) : (false)
+                  (s === 'regex') ? (mtest.test(mvalue)) : (s === 'lt' || s === lt)
+                    ? (mvalue < mtest) : (s === 'gt' || s === gt)
+                      ? (mvalue > mtest) : (s === 'lte' || s === lteq)
+                        ? (mvalue <= mtest) : (s === 'gte' || s === gteq)
+                          ? (mvalue >= mtest) : (s === 'left')
+                            ? (mvalue.indexOf(mtest) === 0) : (s === 'leftnocase')
+                              ? (mvalue.toLowerCase().indexOf(mtest.toLowerCase())
+                                === 0) : (s === 'right')
+                                ? (mvalue.substring((mvalue.length - mtest.length))
+                                  === mtest) : (s === 'rightnocase')
+                                  ? (mvalue.toLowerCase().substring(
+                                    (mvalue.length - mtest.length)) === mtest.toLowerCase())
+                                  : (s === 'like')
+                                    ? (mvalue.indexOf(mtest) >= 0) : (s === 'likenocase')
+                                      ? (mvalue.toLowerCase().indexOf(mtest.toLowerCase()) >= 0)
+                                      : (s === eqeqeq || s === 'is')
+                                        ? (mvalue === mtest) : (s === eqeq)
+                                          ? (mvalue == mtest) : (s === bangeqeq)
+                                            ? (mvalue !== mtest) : (s === bangeq)
+                                              ? (mvalue != mtest) : (s === 'isnocase')
+                                                ? (mvalue.toLowerCase
+                                                  ? mvalue.toLowerCase() === mtest.toLowerCase()
+                                                  : mvalue === mtest) : (s === 'has')
+                                                  ? (T.has(mvalue, mtest)) : (s === 'hasall')
+                                                    ? (T.hasAll(mvalue, mtest)) : (s === 'contains')
+                                                      ? (SectDB.isArray(mvalue) && mvalue.indexOf(mtest) > -1) : (
+                                                        s.indexOf('is') === -1
+                                                        && !SectDB.isNull(mvalue)
+                                                        && !SectDB.isUndefined(mvalue)
+                                                        && !SectDB.isObject(mtest)
+                                                        && !SectDB.isArray(mtest)
+                                                      )
+                                                        ? (mtest === mvalue[s])
+                                                        : (T[s] && T.isFunction(T[s])
+                                                          && s.indexOf('is') === 0)
+                                                          ? T[s](mvalue) === mtest
+                                                          : (T[s] && T.isFunction(T[s]))
+                                                            ? T[s](mvalue, mtest) : (false)
                 );
                 /*jslint eqeq : false */
                 r = (r && !su) ? false : (!r && !su) ? true : r;
 
                 return r;
               };
-              c.push( matchFunc );
+              c.push(matchFunc);
 
             });
             // if only one filter in the collection push it onto the filter list without the array
-            if ( c.length === 1 ){
+            if (c.length === 1) {
 
-              nf.push( c[0] );
+              nf.push(c[0]);
             }
             else {
               // else build a function to loop over all the filters and return true only if ALL match
               // this is a logical AND
-              nf.push( function () {
+              nf.push(function() {
                 var that = this, match = false;
-                each( c, function ( f ) {
-                  if ( f.apply( that ) ){
+                each(c, function(f) {
+                  if (f.apply(that)) {
                     match = true;
                   }
                 });
@@ -412,22 +416,22 @@ var SectDB, exports, T;
         });
         // finally return a single function that wraps all the other functions and will run a query
         // where all functions have to return true for a record to appear in a query result
-        f = function () {
+        f = function() {
           var that = this, match = true;
           // faster if less than  4 functions
-          match = (nf.length === 1 && !nf[0].apply( that )) ? false :
+          match = (nf.length === 1 && !nf[0].apply(that)) ? false :
             (nf.length === 2 &&
-              (!nf[0].apply( that ) || !nf[1].apply( that ))) ? false :
+              (!nf[0].apply(that) || !nf[1].apply(that))) ? false :
               (nf.length === 3 &&
-                (!nf[0].apply( that ) || !nf[1].apply( that ) ||
-                  !nf[2].apply( that ))) ? false :
+                (!nf[0].apply(that) || !nf[1].apply(that) ||
+                  !nf[2].apply(that))) ? false :
                 (nf.length === 4 &&
-                  (!nf[0].apply( that ) || !nf[1].apply( that ) ||
-                    !nf[2].apply( that ) || !nf[3].apply( that ))) ? false
+                  (!nf[0].apply(that) || !nf[1].apply(that) ||
+                    !nf[2].apply(that) || !nf[3].apply(that))) ? false
                   : true;
-          if ( nf.length > 4 ){
-            each( nf, function ( f ) {
-              if ( !runFilters( that, f ) ){
+          if (nf.length > 4) {
+            each(nf, function(f) {
+              if (!runFilters(that, f)) {
                 match = false;
               }
             });
@@ -438,12 +442,12 @@ var SectDB, exports, T;
       }
 
       // if function
-      if ( T.isFunction( f ) ){
+      if (T.isFunction(f)) {
         return f;
       }
     };
 
-    orderByCol = function ( ar, o ) {
+    orderByCol = function(ar, o) {
       // ****************************************
       // *
       // * Takes: takes an array and a sort object
@@ -452,99 +456,99 @@ var SectDB, exports, T;
       // *
       // ****************************************
 
-      var sortFunc = function ( a, b ) {
+      var sortFunc = function(a, b) {
         // function to pass to the native array.sort to sort an array
         var r = 0;
 
-        T.each( o, function ( sd ) {
+        T.each(o, function(sd) {
           // loop over the sort instructions
           // get the column name
           var o, col, dir, c, d;
-          o = sd.split( ' ' );
+          o = sd.split(' ');
           col = o[0];
 
           // get the direction
           dir = (o.length === 1) ? "logical" : o[1];
 
 
-          if ( dir === 'logical' ){
+          if (dir === 'logical') {
             // if dir is logical than grab the charnum arrays for the two values we are looking at
-            c = numcharsplit( a[col] );
-            d = numcharsplit( b[col] );
+            c = numcharsplit(a[col]);
+            d = numcharsplit(b[col]);
             // loop over the charnumarrays until one value is higher than the other
-            T.each( (c.length <= d.length) ? c : d, function ( x, i ) {
-              if ( c[i] < d[i] ){
+            T.each((c.length <= d.length) ? c : d, function(x, i) {
+              if (c[i] < d[i]) {
                 r = -1;
                 return SectDB.EXIT;
               }
-              else if ( c[i] > d[i] ){
+              else if (c[i] > d[i]) {
                 r = 1;
                 return SectDB.EXIT;
               }
-            } );
+            });
           }
-          else if ( dir === 'logicaldesc' ){
+          else if (dir === 'logicaldesc') {
             // if logicaldesc than grab the charnum arrays for the two values we are looking at
-            c = numcharsplit( a[col] );
-            d = numcharsplit( b[col] );
+            c = numcharsplit(a[col]);
+            d = numcharsplit(b[col]);
             // loop over the charnumarrays until one value is lower than the other
-            T.each( (c.length <= d.length) ? c : d, function ( x, i ) {
-              if ( c[i] > d[i] ){
+            T.each((c.length <= d.length) ? c : d, function(x, i) {
+              if (c[i] > d[i]) {
                 r = -1;
                 return SectDB.EXIT;
               }
-              else if ( c[i] < d[i] ){
+              else if (c[i] < d[i]) {
                 r = 1;
                 return SectDB.EXIT;
               }
-            } );
+            });
           }
-          else if ( dir === 'asec' && a[col] < b[col] ){
+          else if (dir === 'asec' && a[col] < b[col]) {
             // if asec - default - check to see which is higher
             r = -1;
             return T.EXIT;
           }
-          else if ( dir === 'asec' && a[col] > b[col] ){
+          else if (dir === 'asec' && a[col] > b[col]) {
             // if asec - default - check to see which is higher
             r = 1;
             return T.EXIT;
           }
-          else if ( dir === 'desc' && a[col] > b[col] ){
+          else if (dir === 'desc' && a[col] > b[col]) {
             // if desc check to see which is lower
             r = -1;
             return T.EXIT;
 
           }
-          else if ( dir === 'desc' && a[col] < b[col] ){
+          else if (dir === 'desc' && a[col] < b[col]) {
             // if desc check to see which is lower
             r = 1;
             return T.EXIT;
 
           }
           // if r is still 0 and we are doing a logical sort than look to see if one array is longer than the other
-          if ( r === 0 && dir === 'logical' && c.length < d.length ){
+          if (r === 0 && dir === 'logical' && c.length < d.length) {
             r = -1;
           }
-          else if ( r === 0 && dir === 'logical' && c.length > d.length ){
+          else if (r === 0 && dir === 'logical' && c.length > d.length) {
             r = 1;
           }
-          else if ( r === 0 && dir === 'logicaldesc' && c.length > d.length ){
+          else if (r === 0 && dir === 'logicaldesc' && c.length > d.length) {
             r = -1;
           }
-          else if ( r === 0 && dir === 'logicaldesc' && c.length < d.length ){
+          else if (r === 0 && dir === 'logicaldesc' && c.length < d.length) {
             r = 1;
           }
 
-          if ( r !== 0 ){
+          if (r !== 0) {
             return T.EXIT;
           }
 
 
-        } );
+        });
         return r;
       };
       // call the sort function and return the newly sorted array
-      return (ar && ar.push) ? ar.sort( sortFunc ) : ar;
+      return (ar && ar.push) ? ar.sort(sortFunc) : ar;
 
 
     };
@@ -555,54 +559,54 @@ var SectDB, exports, T;
     // * Returns: return an array of numbers and letters
     // * Purpose: Used for logical sorting. String Example: 12ABC results: [12,'ABC']
     // **************************************** 
-    (function () {
+    (function() {
       // creates a cache for numchar conversions
       var cache = {}, cachcounter = 0;
       // creates the numcharsplit function
-      numcharsplit = function ( thing ) {
+      numcharsplit = function(thing) {
         // if over 1000 items exist in the cache, clear it and start over
-        if ( cachcounter > cmax ){
+        if (cachcounter > cmax) {
           cache = {};
           cachcounter = 0;
         }
 
         // if a cache can be found for a numchar then return its array value
-        return cache['_' + thing] || (function () {
+        return cache['_' + thing] || (function() {
           // otherwise do the conversion
           // make sure it is a string and setup so other variables
-          var nthing = String( thing ),
+          var nthing = String(thing),
             na = [],
             rv = '_',
             rt = '',
             x, xx, c;
 
           // loop over the string char by char
-          for ( x = 0, xx = nthing.length; x < xx; x++ ){
+          for (x = 0, xx = nthing.length; x < xx; x++) {
             // take the char at each location
-            c = nthing.charCodeAt( x );
+            c = nthing.charCodeAt(x);
             // check to see if it is a valid number char and append it to the array.
             // if last char was a string push the string to the charnum array
-            if ( ( c >= 48 && c <= 57 ) || c === 46 ){
-              if ( rt !== 'n' ){
+            if ((c >= 48 && c <= 57) || c === 46) {
+              if (rt !== 'n') {
                 rt = 'n';
-                na.push( rv.toLowerCase() );
+                na.push(rv.toLowerCase());
                 rv = '';
               }
-              rv = rv + nthing.charAt( x );
+              rv = rv + nthing.charAt(x);
             }
             else {
               // check to see if it is a valid string char and append to string
               // if last char was a number push the whole number to the charnum array
-              if ( rt !== 's' ){
+              if (rt !== 's') {
                 rt = 's';
-                na.push( parseFloat( rv ) );
+                na.push(parseFloat(rv));
                 rv = '';
               }
-              rv = rv + nthing.charAt( x );
+              rv = rv + nthing.charAt(x);
             }
           }
           // once done, push the last value to the charnum array and remove the first uneeded item
-          na.push( (rt === 'n') ? parseFloat( rv ) : rv.toLowerCase() );
+          na.push((rt === 'n') ? parseFloat(rv) : rv.toLowerCase());
           na.shift();
           // add to cache
           cache['_' + thing] = na;
@@ -619,14 +623,14 @@ var SectDB, exports, T;
     // **************************************** 
 
 
-    run = function () {
-      this.context( {
-        results : this.getDBI().query( this.context() )
+    run = function() {
+      this.context({
+        results: this.getDBI().query(this.context())
       });
 
     };
 
-    API.extend( 'filter', function () {
+    API.extend('filter', function() {
       // ****************************************
       // *
       // * Takes: takes unlimited filter objects as arguments
@@ -634,247 +638,246 @@ var SectDB, exports, T;
       // * Purpose: Take filters as objects and cache functions for later lookup when a query is run
       // **************************************** 
       var
-        nc = SectDB.mergeObj( this.context(), { run : null } ),
+        nc = SectDB.mergeObj(this.context(), { run: null }),
         nq = []
-      ;
-      each( nc.q, function ( v ) {
-        nq.push( v );
+        ;
+      each(nc.q, function(v) {
+        nq.push(v);
       });
       nc.q = nq;
       // Hadnle passing of ___ID or a record on lookup.
-      each( sortArgs(arguments), function ( f ) {
-        nc.q.push( returnFilter( f ) );
-        nc.filterRaw.push( f );
+      each(sortArgs(arguments), function(f) {
+        nc.q.push(returnFilter(f));
+        nc.filterRaw.push(f);
       });
 
-      return this.getroot( nc );
+      return this.getroot(nc);
     });
 
-    API.extend( 'order', function ( o ) {
+    API.extend('order', function(o) {
       // ****************************************
       // *
       // * Purpose: takes a string and creates an array of order instructions to be used with a query
       // ****************************************
 
-      o = o.split( ',' );
+      o = o.split(',');
       var x = [], nc;
 
-      each( o, function ( r ) {
-        x.push( r.replace( /^\s*/, '' ).replace( /\s*$/, '' ) );
+      each(o, function(r) {
+        x.push(r.replace(/^\s*/, '').replace(/\s*$/, ''));
       });
 
-      nc = SectDB.mergeObj( this.context(), {sort : null} );
+      nc = SectDB.mergeObj(this.context(), { sort: null });
       nc.order = x;
 
-      return this.getroot( nc );
+      return this.getroot(nc);
     });
 
-    API.extend( 'limit', function ( n ) {
+    API.extend('limit', function(n) {
       // ****************************************
       // *
       // * Purpose: takes a limit number to limit the number of rows returned by a query. Will update the results
       // * of a query
       // **************************************** 
-      var nc = SectDB.mergeObj( this.context(), {}),
+      var nc = SectDB.mergeObj(this.context(), {}),
         limitedresults
         ;
 
       nc.limit = n;
 
-      if ( nc.run && nc.sort ){
+      if (nc.run && nc.sort) {
         limitedresults = [];
-        each( nc.results, function ( i, x ) {
-          if ( (x + 1) > n ){
+        each(nc.results, function(i, x) {
+          if ((x + 1) > n) {
             return SectDB.EXIT;
           }
-          limitedresults.push( i );
+          limitedresults.push(i);
         });
         nc.results = limitedresults;
       }
 
-      return this.getroot( nc );
+      return this.getroot(nc);
     });
 
-    API.extend( 'start', function ( n ) {
+    API.extend('start', function(n) {
       // ****************************************
       // *
       // * Purpose: takes a limit number to limit the number of rows returned by a query. Will update the results
       // * of a query
       // **************************************** 
-      var nc = SectDB.mergeObj( this.context(), {} ),
+      var nc = SectDB.mergeObj(this.context(), {}),
         limitedresults
         ;
 
       nc.start = n;
 
-      if ( nc.run && nc.sort && !nc.limit ){
+      if (nc.run && nc.sort && !nc.limit) {
         limitedresults = [];
-        each( nc.results, function ( i, x ) {
-          if ( (x + 1) > n ){
-            limitedresults.push( i );
+        each(nc.results, function(i, x) {
+          if ((x + 1) > n) {
+            limitedresults.push(i);
           }
         });
         nc.results = limitedresults;
       }
       else {
-        nc = SectDB.mergeObj( this.context(), {run : null, start : n} );
+        nc = SectDB.mergeObj(this.context(), { run: null, start: n });
       }
 
-      return this.getroot( nc );
+      return this.getroot(nc);
     });
 
-    API.extend( 'update', function ( arg0, arg1, arg2 ) {
+    API.extend('update', function(arg0, arg1, arg2) {
       // ****************************************
       // *
       // * Takes: a object and passes it off DBI update method for all matched records
       // **************************************** 
       var runEvent = true, o = {}, args = sortArgs(arguments), that;
-      if ( SectDB.isString( arg0 ) &&
-        (arguments.length === 2 || arguments.length === 3) )
-      {
+      if (SectDB.isString(arg0) &&
+        (arguments.length === 2 || arguments.length === 3)) {
         o[arg0] = arg1;
-        if ( arguments.length === 3 ){
+        if (arguments.length === 3) {
           runEvent = arg2;
         }
       }
       else {
         o = arg0;
-        if ( args.length === 2 ){
+        if (args.length === 2) {
           runEvent = arg1;
         }
       }
 
       that = this;
-      run.call( this );
-      each( this.context().results, function ( r ) {
+      run.call(this);
+      each(this.context().results, function(r) {
         var c = o;
-        if ( SectDB.isFunction( c ) ){
-          c = c.apply( SectDB.mergeObj( r, {} ) );
+        if (SectDB.isFunction(c)) {
+          c = c.apply(SectDB.mergeObj(r, {}));
         }
         else {
-          if ( T.isFunction( c ) ){
-            c = c( SectDB.mergeObj( r, {} ) );
+          if (T.isFunction(c)) {
+            c = c(SectDB.mergeObj(r, {}));
           }
         }
-        if ( SectDB.isObject( c ) ){
-          that.getDBI().update( r.___id, c, runEvent );
+        if (SectDB.isObject(c)) {
+          that.getDBI().update(r.___id, c, runEvent);
         }
       });
-      if ( this.context().results.length ){
-        this.context( { run : null });
+      if (this.context().results.length) {
+        this.context({ run: null });
       }
       return this;
     });
-    API.extend( 'remove', function ( runEvent ) {
+    API.extend('remove', function(runEvent) {
       // ****************************************
       // *
       // * Purpose: removes records from the DB via the remove and removeCommit DBI methods
       // **************************************** 
       var that = this, c = 0;
-      run.call( this );
-      each( this.context().results, function ( r ) {
-        that.getDBI().remove( r.___id );
+      run.call(this);
+      each(this.context().results, function(r) {
+        that.getDBI().remove(r.___id);
         c++;
       });
-      if ( this.context().results.length ){
-        this.context( {
-          run : null
+      if (this.context().results.length) {
+        this.context({
+          run: null
         });
-        that.getDBI().removeCommit( runEvent );
+        that.getDBI().removeCommit(runEvent);
       }
 
       return c;
     });
 
 
-    API.extend( 'count', function () {
+    API.extend('count', function() {
       // ****************************************
       // *
       // * Returns: The length of a query result
       // **************************************** 
-      run.call( this );
+      run.call(this);
       return this.context().results.length;
     });
 
-    API.extend( 'callback', function ( f, delay ) {
+    API.extend('callback', function(f, delay) {
       // ****************************************
       // *
       // * Returns null;
       // * Runs a function on return of run.call
       // **************************************** 
-      if ( f ){
+      if (f) {
         var that = this;
-        setTimeout( function () {
-          run.call( that );
-          f.call( that.getroot( that.context() ) );
-        }, delay || 0 );
+        setTimeout(function() {
+          run.call(that);
+          f.call(that.getroot(that.context()));
+        }, delay || 0);
       }
 
 
       return null;
     });
 
-    API.extend( 'get', function () {
+    API.extend('get', function() {
       // ****************************************
       // *
       // * Returns: An array of all matching records
       // **************************************** 
-      run.call( this );
+      run.call(this);
       return this.context().results;
     });
 
-    API.extend( 'stringify', function () {
+    API.extend('stringify', function() {
       // ****************************************
       // *
       // * Returns: An JSON string of all matching records
       // **************************************** 
-      return JSON.stringify( this.get() );
+      return JSON.stringify(this.get());
     });
-    API.extend( 'first', function () {
+    API.extend('first', function() {
       // ****************************************
       // *
       // * Returns: The first matching record
       // **************************************** 
-      run.call( this );
+      run.call(this);
       return this.context().results[0] || false;
     });
-    API.extend( 'last', function () {
+    API.extend('last', function() {
       // ****************************************
       // *
       // * Returns: The last matching record
       // **************************************** 
-      run.call( this );
+      run.call(this);
       return this.context().results[this.context().results.length - 1] ||
         false;
     });
 
 
-    API.extend( 'sum', function () {
+    API.extend('sum', function() {
       // ****************************************
       // *
       // * Takes: column to sum up
       // * Returns: Sums the values of a column
       // **************************************** 
       var total = 0, that = this;
-      run.call( that );
-      each( sortArgs(arguments), function ( c ) {
-        each( that.context().results, function ( r ) {
+      run.call(that);
+      each(sortArgs(arguments), function(c) {
+        each(that.context().results, function(r) {
           total = total + (r[c] || 0);
         });
       });
       return total;
     });
 
-    API.extend( 'min', function ( c ) {
+    API.extend('min', function(c) {
       // ****************************************
       // *
       // * Takes: column to find min
       // * Returns: the lowest value
       // **************************************** 
       var lowest = null;
-      run.call( this );
-      each( this.context().results, function ( r ) {
-        if ( lowest === null || r[c] < lowest ){
+      run.call(this);
+      each(this.context().results, function(r) {
+        if (lowest === null || r[c] < lowest) {
           lowest = r[c];
         }
       });
@@ -914,15 +917,15 @@ var SectDB, exports, T;
     //  This code passes jslint with the exception of 2 warnings about
     //  the '==' and '!=' lines.  We can't do anything about that short of
     //  deleting the lines.
-	
-    (function () {
-      var innerJoinFunction = (function () {
+
+    (function() {
+      var innerJoinFunction = (function() {
         var fnCompareList, fnCombineRow, fnMain;
 
-        fnCompareList = function ( left_row, right_row, arg_list ) {
+        fnCompareList = function(left_row, right_row, arg_list) {
           var data_lt, data_rt, op_code, error;
 
-          if ( arg_list.length === 2 ){
+          if (arg_list.length === 2) {
             data_lt = left_row[arg_list[0]];
             op_code = '===';
             data_rt = right_row[arg_list[1]];
@@ -934,25 +937,25 @@ var SectDB, exports, T;
           }
 
           /*jslint eqeq : true */
-          switch ( op_code ){
-            case '===' :
+          switch (op_code) {
+            case '===':
               return data_lt === data_rt;
-            case '!==' :
+            case '!==':
               return data_lt !== data_rt;
-            case '<'   :
+            case '<':
               return data_lt < data_rt;
-            case '>'   :
+            case '>':
               return data_lt > data_rt;
-            case '<='  :
+            case '<=':
               return data_lt <= data_rt;
-            case '>='  :
+            case '>=':
               return data_lt >= data_rt;
-            case '=='  :
+            case '==':
               return data_lt == data_rt;
-            case '!='  :
+            case '!=':
               return data_lt != data_rt;
-            default :
-              throw String( op_code ) + ' is not supported';
+            default:
+              throw String(op_code) + ' is not supported';
           }
           // 'jslint eqeq : false'  here results in
           // "Unreachable '/*jslint' after 'return'".
@@ -960,26 +963,25 @@ var SectDB, exports, T;
           // is discarded at the end of this functional scope
         };
 
-        fnCombineRow = function ( left_row, right_row ) {
+        fnCombineRow = function(left_row, right_row) {
           var out_map = {}, i, prefix;
 
-          for ( i in left_row ){
-            if ( left_row.hasOwnProperty( i ) ){
+          for (i in left_row) {
+            if (left_row.hasOwnProperty(i)) {
               out_map[i] = left_row[i];
             }
           }
-          for ( i in right_row ){
-            if ( right_row.hasOwnProperty( i ) && i !== '___id' &&
-              i !== '___s' )
-            {
-              prefix = !SectDB.isUndefined( out_map[i] ) ? 'right_' : '';
-              out_map[prefix + String( i ) ] = right_row[i];
+          for (i in right_row) {
+            if (right_row.hasOwnProperty(i) && i !== '___id' &&
+              i !== '___s') {
+              prefix = !SectDB.isUndefined(out_map[i]) ? 'right_' : '';
+              out_map[prefix + String(i)] = right_row[i];
             }
           }
           return out_map;
         };
 
-        fnMain = function ( table ) {
+        fnMain = function(table) {
           var
             right_table, i,
             arg_list = sortArgs(arguments),
@@ -987,68 +989,68 @@ var SectDB, exports, T;
             result_list = []
             ;
 
-          if ( typeof table.filter !== 'function' ){
-            if ( table.SectDB ){ right_table = table(); }
+          if (typeof table.filter !== 'function') {
+            if (table.SectDB) { right_table = table(); }
             else {
               throw 'SectDB or result not supplied';
             }
           }
           else { right_table = table; }
 
-          this.context( {
-            results : this.getDBI().query( this.context() )
-          } );
+          this.context({
+            results: this.getDBI().query(this.context())
+          });
 
-          SectDB.each( this.context().results, function ( left_row ) {
-            right_table.each( function ( right_row ) {
+          SectDB.each(this.context().results, function(left_row) {
+            right_table.each(function(right_row) {
               var arg_data, is_ok = true;
               CONDITION:
-                for ( i = 1; i < arg_length; i++ ){
-                  arg_data = arg_list[i];
-                  if ( typeof arg_data === 'function' ){
-                    is_ok = arg_data( left_row, right_row );
-                  }
-                  else if ( typeof arg_data === 'object' && arg_data.length ){
-                    is_ok = fnCompareList( left_row, right_row, arg_data );
-                  }
-                  else {
-                    is_ok = false;
-                  }
-
-                  if ( !is_ok ){ break CONDITION; } // short circuit
+              for (i = 1; i < arg_length; i++) {
+                arg_data = arg_list[i];
+                if (typeof arg_data === 'function') {
+                  is_ok = arg_data(left_row, right_row);
+                }
+                else if (typeof arg_data === 'object' && arg_data.length) {
+                  is_ok = fnCompareList(left_row, right_row, arg_data);
+                }
+                else {
+                  is_ok = false;
                 }
 
-              if ( is_ok ){
-                result_list.push( fnCombineRow( left_row, right_row ) );
+                if (!is_ok) { break CONDITION; } // short circuit
               }
-            } );
-          } );
-          return SectDB( result_list )();
+
+              if (is_ok) {
+                result_list.push(fnCombineRow(left_row, right_row));
+              }
+            });
+          });
+          return SectDB(result_list)();
         };
 
         return fnMain;
       }());
 
-      API.extend( 'join', innerJoinFunction );
+      API.extend('join', innerJoinFunction);
     }());
 
-    API.extend( 'max', function ( c ) {
+    API.extend('max', function(c) {
       // ****************************************
       // *
       // * Takes: column to find max
       // * Returns: the highest value
       // ****************************************
       var highest = null;
-      run.call( this );
-      each( this.context().results, function ( r ) {
-        if ( highest === null || r[c] > highest ){
+      run.call(this);
+      each(this.context().results, function(r) {
+        if (highest === null || r[c] > highest) {
           highest = r[c];
         }
       });
       return highest;
     });
 
-    API.extend( 'select', function () {
+    API.extend('select', function() {
       // ****************************************
       // *
       // * Takes: columns to select values into an array
@@ -1057,26 +1059,26 @@ var SectDB, exports, T;
       // **************************************** 
 
       var ra = [], args = sortArgs(arguments);
-      run.call( this );
-      if ( arguments.length === 1 ){
+      run.call(this);
+      if (arguments.length === 1) {
 
-        each( this.context().results, function ( r ) {
+        each(this.context().results, function(r) {
 
-          ra.push( r[args[0]] );
+          ra.push(r[args[0]]);
         });
       }
       else {
-        each( this.context().results, function ( r ) {
+        each(this.context().results, function(r) {
           var row = [];
-          each( args, function ( c ) {
-            row.push( r[c] );
+          each(args, function(c) {
+            row.push(r[c]);
           });
-          ra.push( row );
+          ra.push(row);
         });
       }
       return ra;
     });
-    API.extend( 'distinct', function () {
+    API.extend('distinct', function() {
       // ****************************************
       // *
       // * Takes: columns to select unique alues into an array
@@ -1084,94 +1086,94 @@ var SectDB, exports, T;
       // * Note if more than one column is given an array of arrays is returned
       // **************************************** 
       var ra = [], args = sortArgs(arguments);
-      run.call( this );
-      if ( arguments.length === 1 ){
+      run.call(this);
+      if (arguments.length === 1) {
 
-        each( this.context().results, function ( r ) {
+        each(this.context().results, function(r) {
           var v = r[args[0]], dup = false;
-          each( ra, function ( d ) {
-            if ( v === d ){
+          each(ra, function(d) {
+            if (v === d) {
               dup = true;
               return SectDB.EXIT;
             }
           });
-          if ( !dup ){
-            ra.push( v );
+          if (!dup) {
+            ra.push(v);
           }
         });
       }
       else {
-        each( this.context().results, function ( r ) {
+        each(this.context().results, function(r) {
           var row = [], dup = false;
-          each( args, function ( c ) {
-            row.push( r[c] );
+          each(args, function(c) {
+            row.push(r[c]);
           });
-          each( ra, function ( d ) {
+          each(ra, function(d) {
             var ldup = true;
-            each( args, function ( c, i ) {
-              if ( row[i] !== d[i] ){
+            each(args, function(c, i) {
+              if (row[i] !== d[i]) {
                 ldup = false;
                 return SectDB.EXIT;
               }
             });
-            if ( ldup ){
+            if (ldup) {
               dup = true;
               return SectDB.EXIT;
             }
           });
-          if ( !dup ){
-            ra.push( row );
+          if (!dup) {
+            ra.push(row);
           }
         });
       }
       return ra;
     });
-    API.extend( 'supplant', function ( template, returnarray ) {
+    API.extend('supplant', function(template, returnarray) {
       // ****************************************
       // *
       // * Takes: a string template formated with key to be replaced with values from the rows, flag to determine if we want array of strings
       // * Returns: array of values or a string
       // **************************************** 
       var ra = [];
-      run.call( this );
-      each( this.context().results, function ( r ) {
+      run.call(this);
+      each(this.context().results, function(r) {
         // TODO: The curly braces used to be unescaped
-        ra.push( template.replace( /\{([^\{\}]*)\}/g, function ( a, b ) {
+        ra.push(template.replace(/\{([^\{\}]*)\}/g, function(a, b) {
           var v = r[b];
           return typeof v === 'string' || typeof v === 'number' ? v : a;
-        } ) );
+        }));
       });
-      return (!returnarray) ? ra.join( "" ) : ra;
+      return (!returnarray) ? ra.join("") : ra;
     });
 
 
-    API.extend( 'each', function ( m ) {
+    API.extend('each', function(m) {
       // ****************************************
       // *
       // * Takes: a function
       // * Purpose: loops over every matching record and applies the function
       // **************************************** 
-      run.call( this );
-      each( this.context().results, m );
+      run.call(this);
+      each(this.context().results, m);
       return this;
     });
-    API.extend( 'map', function ( m ) {
+    API.extend('map', function(m) {
       // ****************************************
       // *
       // * Takes: a function
       // * Purpose: loops over every matching record and applies the function, returing the results in an array
       // **************************************** 
       var ra = [];
-      run.call( this );
-      each( this.context().results, function ( r ) {
-        ra.push( m( r ) );
+      run.call(this);
+      each(this.context().results, function(r) {
+        ra.push(m(r));
       });
       return ra;
     });
 
 
 
-    T = function ( d ) {
+    T = function(d) {
       // ****************************************
       // *
       // * T is the main SectDB object
@@ -1182,15 +1184,15 @@ var SectDB, exports, T;
         ID = {},
         RC = 1,
         settings = {
-          template          : false,
-          onInsert          : false,
-          onUpdate          : false,
-          onRemove          : false,
-          onDBChange        : false,
-          storageName       : false,
-          forcePropertyCase : null,
-          cacheSize         : 100,
-          name              : ''
+          template: false,
+          onInsert: false,
+          onUpdate: false,
+          onRemove: false,
+          onDBChange: false,
+          storageName: false,
+          forcePropertyCase: null,
+          cacheSize: 100,
+          name: ''
         },
         dm = new Date(),
         CacheCount = 0,
@@ -1212,7 +1214,7 @@ var SectDB, exports, T;
       // **************************************** 
 
 
-      runIndexes = function ( indexes ) {
+      runIndexes = function(indexes) {
         // ****************************************
         // *
         // * Takes: a collection of indexes
@@ -1221,36 +1223,34 @@ var SectDB, exports, T;
 
         var records = [], UniqueEnforce = false;
 
-        if ( indexes.length === 0 ){
+        if (indexes.length === 0) {
           return TOb;
         }
 
-        each( indexes, function ( f ) {
+        each(indexes, function(f) {
           // Check to see if record ID
-          if ( T.isString( f ) && /[t][0-9]*[r][0-9]*/i.test( f ) &&
-            TOb[ID[f]] )
-          {
-            records.push( TOb[ID[f]] );
+          if (T.isString(f) && /[t][0-9]*[r][0-9]*/i.test(f) &&
+            TOb[ID[f]]) {
+            records.push(TOb[ID[f]]);
             UniqueEnforce = true;
           }
           // Check to see if record
-          if ( T.isObject( f ) && f.___id && f.___s &&
-            TOb[ID[f.___id]] )
-          {
-            records.push( TOb[ID[f.___id]] );
+          if (T.isObject(f) && f.___id && f.___s &&
+            TOb[ID[f.___id]]) {
+            records.push(TOb[ID[f.___id]]);
             UniqueEnforce = true;
           }
           // Check to see if array of indexes
-          if ( T.isArray( f ) ){
-            each( f, function ( r ) {
-              each( runIndexes( r ), function ( rr ) {
-                records.push( rr );
+          if (T.isArray(f)) {
+            each(f, function(r) {
+              each(runIndexes(r), function(rr) {
+                records.push(rr);
               });
 
             });
           }
         });
-        if ( UniqueEnforce && records.length > 1 ){
+        if (UniqueEnforce && records.length > 1) {
           records = [];
         }
 
@@ -1262,106 +1262,105 @@ var SectDB, exports, T;
         // *
         // * The DBI is the internal DataBase Interface that interacts with the data
         // **************************************** 
-        dm           : function ( nd ) {
+        dm: function(nd) {
           // ****************************************
           // *
           // * Takes: an optional new modify date
           // * Purpose: used to get and set the DB modify date
           // **************************************** 
-          if ( nd ){
+          if (nd) {
             dm = nd;
             Cache = {};
             CacheCount = 0;
             CacheClear = 0;
           }
-          if ( settings.onDBChange ){
-            setTimeout( function () {
-              settings.onDBChange.call( TOb );
-            }, 0 );
+          if (settings.onDBChange) {
+            setTimeout(function() {
+              settings.onDBChange.call(TOb);
+            }, 0);
           }
-          if ( settings.storageName ){
-            setTimeout( function () {
-              localStorage.setItem( 'sectdb_' + settings.storageName,
-                JSON.stringify( TOb ) );
+          if (settings.storageName) {
+            setTimeout(function() {
+              localStorage.setItem('sectdb_' + settings.storageName,
+                JSON.stringify(TOb));
             });
           }
           return dm;
         },
-        insert       : function ( i, runEvent ) {
+        insert: function(i, runEvent) {
           // ****************************************
           // *
           // * Takes: a new record to insert
           // * Purpose: merge the object with the template, add an ID, insert into DB, call insert event
           // **************************************** 
           var columns = [],
-            records   = [],
-            input     = protectJSON( i )
+            records = [],
+            input = protectJSON(i)
             ;
-          each( input, function ( v, i ) {
+          each(input, function(v, i) {
             var nv, o;
-            if ( T.isArray( v ) && i === 0 ){
-              each( v, function ( av ) {
+            if (T.isArray(v) && i === 0) {
+              each(v, function(av) {
 
-                columns.push( (settings.forcePropertyCase === 'lower')
+                columns.push((settings.forcePropertyCase === 'lower')
                   ? av.toLowerCase()
-                    : (settings.forcePropertyCase === 'upper')
-                  ? av.toUpperCase() : av );
+                  : (settings.forcePropertyCase === 'upper')
+                    ? av.toUpperCase() : av);
               });
               return true;
             }
-            else if ( T.isArray( v ) ){
+            else if (T.isArray(v)) {
               nv = {};
-              each( v, function ( av, ai ) {
+              each(v, function(av, ai) {
                 nv[columns[ai]] = av;
               });
               v = nv;
 
             }
-            else if ( T.isObject( v ) && settings.forcePropertyCase ){
+            else if (T.isObject(v) && settings.forcePropertyCase) {
               o = {};
 
-              eachin( v, function ( av, ai ) {
+              eachin(v, function(av, ai) {
                 o[(settings.forcePropertyCase === 'lower') ? ai.toLowerCase()
                   : (settings.forcePropertyCase === 'upper')
-                  ? ai.toUpperCase() : ai] = v[ai];
+                    ? ai.toUpperCase() : ai] = v[ai];
               });
               v = o;
             }
 
             RC++;
-            v.___id = 'T' + String( idpad + TC ).slice( -6 ) + 'R' +
-              String( idpad + RC ).slice( -6 );
+            v.___id = 'T' + String(idpad + TC).slice(-6) + 'R' +
+              String(idpad + RC).slice(-6);
             v.___s = true;
-            records.push( v.___id );
-            if ( settings.template ){
-              v = T.mergeObj( settings.template, v );
+            records.push(v.___id);
+            if (settings.template) {
+              v = T.mergeObj(settings.template, v);
             }
-            TOb.push( v );
+            TOb.push(v);
 
             ID[v.___id] = TOb.length - 1;
-            if ( settings.onInsert &&
-              (runEvent || SectDB.isUndefined( runEvent )) )
-            {
-              settings.onInsert.call( v );
+            if (settings.onInsert &&
+              (runEvent || SectDB.isUndefined(runEvent))) {
+              settings.onInsert.call(v);
             }
-            DBI.dm( new Date() );
+            DBI.dm(new Date());
           });
-          return root( records );
+          return root(records);
         },
-        sort         : function ( o ) {
+        sort: function(o) {
           // ****************************************
           // *
           // * Purpose: Change the sort order of the DB itself and reset the ID bucket
           // **************************************** 
-          TOb = orderByCol( TOb, o.split( ',' ) );
+          TOb = orderByCol(TOb, o.split(','));
           ID = {};
-          each( TOb, function ( r, i ) {
+          each(TOb, function(r, i) {
             ID[r.___id] = i;
           });
-          DBI.dm( new Date() );
+          DBI.dm(new Date());
           return true;
         },
-        update       : function ( id, changes, runEvent ) {
+        update: function(id, changes, runEvent) {
           // ****************************************
           // *
           // * Takes: the ID of record being changed and the changes
@@ -1369,37 +1368,36 @@ var SectDB, exports, T;
           // ****************************************
 
           var nc = {}, or, nr, tc, hasChange;
-          if ( settings.forcePropertyCase ){
-            eachin( changes, function ( v, p ) {
+          if (settings.forcePropertyCase) {
+            eachin(changes, function(v, p) {
               nc[(settings.forcePropertyCase === 'lower') ? p.toLowerCase()
                 : (settings.forcePropertyCase === 'upper') ? p.toUpperCase()
-                : p] = v;
+                  : p] = v;
             });
             changes = nc;
           }
 
           or = TOb[ID[id]];
-          nr = T.mergeObj( or, changes );
+          nr = T.mergeObj(or, changes);
 
           tc = {};
           hasChange = false;
-          eachin( nr, function ( v, i ) {
-            if ( SectDB.isUndefined( or[i] ) || or[i] !== v ){
+          eachin(nr, function(v, i) {
+            if (SectDB.isUndefined(or[i]) || or[i] !== v) {
               tc[i] = v;
               hasChange = true;
             }
           });
-          if ( hasChange ){
-            if ( settings.onUpdate &&
-              (runEvent || SectDB.isUndefined( runEvent )) )
-            {
-              settings.onUpdate.call( nr, TOb[ID[id]], tc );
+          if (hasChange) {
+            if (settings.onUpdate &&
+              (runEvent || SectDB.isUndefined(runEvent))) {
+              settings.onUpdate.call(nr, TOb[ID[id]], tc);
             }
             TOb[ID[id]] = nr;
-            DBI.dm( new Date() );
+            DBI.dm(new Date());
           }
         },
-        remove       : function ( id ) {
+        remove: function(id) {
           // ****************************************
           // *
           // * Takes: the ID of record to be removed
@@ -1407,82 +1405,80 @@ var SectDB, exports, T;
           // **************************************** 
           TOb[ID[id]].___s = false;
         },
-        removeCommit : function ( runEvent ) {
+        removeCommit: function(runEvent) {
           var x;
           // ****************************************
           // *
           // * 
           // * Purpose: loop over all records and remove records with ___s = false, call onRemove event, clear ID
           // ****************************************
-          for ( x = TOb.length - 1; x > -1; x-- ){
+          for (x = TOb.length - 1; x > -1; x--) {
 
-            if ( !TOb[x].___s ){
-              if ( settings.onRemove &&
-                (runEvent || SectDB.isUndefined( runEvent )) )
-              {
-                settings.onRemove.call( TOb[x] );
+            if (!TOb[x].___s) {
+              if (settings.onRemove &&
+                (runEvent || SectDB.isUndefined(runEvent))) {
+                settings.onRemove.call(TOb[x]);
               }
               ID[TOb[x].___id] = undefined;
-              TOb.splice( x, 1 );
+              TOb.splice(x, 1);
             }
           }
           ID = {};
-          each( TOb, function ( r, i ) {
+          each(TOb, function(r, i) {
             ID[r.___id] = i;
           });
-          DBI.dm( new Date() );
+          DBI.dm(new Date());
         },
-        query : function ( context ) {
+        query: function(context) {
           // ****************************************
           // *
           // * Takes: the context object for a query and either returns a cache result or a new query result
           // **************************************** 
           var returnq, cid, results, indexed, limitq, ni;
 
-          if ( settings.cacheSize ) {
+          if (settings.cacheSize) {
             cid = '';
-            each( context.filterRaw, function ( r ) {
-              if ( T.isFunction( r ) ){
+            each(context.filterRaw, function(r) {
+              if (T.isFunction(r)) {
                 cid = 'nocache';
                 return SectDB.EXIT;
               }
             });
-            if ( cid === '' ){
-              cid = makeCid( T.mergeObj( context,
-                {q : false, run : false, sort : false} ) );
+            if (cid === '') {
+              cid = makeCid(T.mergeObj(context,
+                { q: false, run: false, sort: false }));
             }
           }
           // Run a new query if there are no results or the run date has been cleared
-          if ( !context.results || !context.run ||
-            (context.run && DBI.dm() > context.run) )
-          {
+          if (!context.results || !context.run ||
+            (context.run && DBI.dm() > context.run)) {
             results = [];
 
             // check Cache
 
-            if ( settings.cacheSize && Cache[cid] ){
+            if (settings.cacheSize && Cache[cid]) {
 
               Cache[cid].i = CacheCount++;
               return Cache[cid].results;
             }
             else {
               // if no filter, return DB
-              if ( context.q.length === 0 && context.index.length === 0 ){
-                each( TOb, function ( r ) {
-                  results.push( r );
+              if (context.q.length === 0 && context.index.length === 0) {
+                each(TOb, function(r) {
+                  results.push(r);
                 });
                 returnq = results;
               }
               else {
                 // use indexes
 
-                indexed = runIndexes( context.index );
+                indexed = runIndexes(context.index);
 
                 // run filters
-                each( indexed, function ( r ) {
+                each(indexed, function(r) {
                   // Run filter to see if record matches query
-                  if ( context.q.length === 0 || runFilters( r, context.q ) ){
-                    results.push( r );
+                  if (context.q.length === 0 || runFilters(r, context.q)) {
+                    results.push(r);
                   }
                 });
 
@@ -1497,32 +1493,31 @@ var SectDB, exports, T;
             returnq = context.results;
           }
           // If a custom order array exists and the run has been clear or the sort has been cleared
-          if ( context.order.length > 0 && (!context.run || !context.sort) ){
+          if (context.order.length > 0 && (!context.run || !context.sort)) {
             // order the results
-            returnq = orderByCol( returnq, context.order );
+            returnq = orderByCol(returnq, context.order);
           }
 
           // If a limit on the number of results exists and it is less than the returned results, limit results
-          if ( returnq.length &&
+          if (returnq.length &&
             ((context.limit && context.limit < returnq.length) ||
               context.start)
           ) {
             limitq = [];
-            each( returnq, function ( r, i ) {
-              if ( !context.start ||
-                (context.start && (i + 1) >= context.start) )
-              {
-                if ( context.limit ){
+            each(returnq, function(r, i) {
+              if (!context.start ||
+                (context.start && (i + 1) >= context.start)) {
+                if (context.limit) {
                   ni = (context.start) ? (i + 1) - context.start : i;
-                  if ( ni < context.limit ){
-                    limitq.push( r );
+                  if (ni < context.limit) {
+                    limitq.push(r);
                   }
-                  else if ( ni > context.limit ){
+                  else if (ni > context.limit) {
                     return SectDB.EXIT;
                   }
                 }
                 else {
-                  limitq.push( r );
+                  limitq.push(r);
                 }
               }
             });
@@ -1530,32 +1525,32 @@ var SectDB, exports, T;
           }
 
           // update cache
-          if ( settings.cacheSize && cid !== 'nocache' ){
+          if (settings.cacheSize && cid !== 'nocache') {
             CacheClear++;
 
-            setTimeout( function () {
+            setTimeout(function() {
               var bCounter, nc;
-              if ( CacheClear >= settings.cacheSize * 2 ){
+              if (CacheClear >= settings.cacheSize * 2) {
                 CacheClear = 0;
                 bCounter = CacheCount - settings.cacheSize;
                 nc = {};
-                eachin( function ( r, k ) {
-                  if ( r.i >= bCounter ){
+                eachin(function(r, k) {
+                  if (r.i >= bCounter) {
                     nc[k] = r;
                   }
                 });
                 Cache = nc;
               }
-            }, 0 );
+            }, 0);
 
-            Cache[cid] = { i : CacheCount++, results : returnq };
+            Cache[cid] = { i: CacheCount++, results: returnq };
           }
           return returnq;
         }
       };
 
 
-      root = function () {
+      root = function() {
         var iAPI, context;
         // ****************************************
         // *
@@ -1567,51 +1562,52 @@ var SectDB, exports, T;
         // * iAPI is the the method collection valiable when a query has been started by calling dbname
         // * Certain methods are or are not avaliable once you have started a query such as insert -- you can only insert into root
         // ****************************************
-        iAPI = SectDB.mergeObj( SectDB.mergeObj( API, { insert : undefined } ),
-          { getDBI  : function () { return DBI; },
-            getroot : function ( c ) { return root.call( c ); },
-          context : function ( n ) {
-            // ****************************************
-            // *
-            // * The context contains all the information to manage a query including filters, limits, and sorts
-            // **************************************** 
-            if ( n ){
-              context = SectDB.mergeObj( context,
-                n.hasOwnProperty('results')
-                  ? SectDB.mergeObj( n, { run : new Date(), sort: new Date() })
-                  : n
-              );
-            }
-            return context;
-          },
-          extend  : undefined
-        });
+        iAPI = SectDB.mergeObj(SectDB.mergeObj(API, { insert: undefined }),
+          {
+            getDBI: function() { return DBI; },
+            getroot: function(c) { return root.call(c); },
+            context: function(n) {
+              // ****************************************
+              // *
+              // * The context contains all the information to manage a query including filters, limits, and sorts
+              // **************************************** 
+              if (n) {
+                context = SectDB.mergeObj(context,
+                  n.hasOwnProperty('results')
+                    ? SectDB.mergeObj(n, { run: new Date(), sort: new Date() })
+                    : n
+                );
+              }
+              return context;
+            },
+            extend: undefined
+          });
 
         context = (this && this.q) ? this : {
-          limit     : false,
-          start     : false,
-          q         : [],
-          filterRaw : [],
-          index     : [],
-          order     : [],
-          results   : false,
-          run       : null,
-          sort      : null,
-          settings  : settings
+          limit: false,
+          start: false,
+          q: [],
+          filterRaw: [],
+          index: [],
+          order: [],
+          results: false,
+          run: null,
+          sort: null,
+          settings: settings
         };
         // ****************************************
         // *
         // * Call the query method to setup a new query
         // **************************************** 
-        each( sortArgs(arguments), function ( f ) {
+        each(sortArgs(arguments), function(f) {
 
-          if ( isIndexable( f ) ){
-            context.index.push( f );
+          if (isIndexable(f)) {
+            context.index.push(f);
           }
           else {
-            context.q.push( returnFilter( f ) );
+            context.q.push(returnFilter(f));
           }
-          context.filterRaw.push( f );
+          context.filterRaw.push(f);
         });
 
 
@@ -1623,38 +1619,38 @@ var SectDB, exports, T;
       // * If new records have been passed on creation of the DB either as JSON or as an array/object, insert them
       // **************************************** 
       TC++;
-      if ( d ){
-        DBI.insert( d );
+      if (d) {
+        DBI.insert(d);
       }
 
 
       root.insert = DBI.insert;
 
-      root.merge = function ( i, key, runEvent ) {
+      root.merge = function(i, key, runEvent) {
         var
-          search      = {},
+          search = {},
           finalSearch = [],
-          obj         = {}
+          obj = {}
           ;
 
-        runEvent    = runEvent || false;
-        key         = key      || 'id';
+        runEvent = runEvent || false;
+        key = key || 'id';
 
-        each( i, function ( o ) {
+        each(i, function(o) {
           var existingObject;
           search[key] = o[key];
-          finalSearch.push( o[key] );
-          existingObject = root( search ).first();
-          if ( existingObject ){
-            DBI.update( existingObject.___id, o, runEvent );
+          finalSearch.push(o[key]);
+          existingObject = root(search).first();
+          if (existingObject) {
+            DBI.update(existingObject.___id, o, runEvent);
           }
           else {
-            DBI.insert( o, runEvent );
+            DBI.insert(o, runEvent);
           }
         });
 
         obj[key] = finalSearch;
-        return root( obj );
+        return root(obj);
       };
 
       root.SectDB = true;
@@ -1663,16 +1659,16 @@ var SectDB, exports, T;
       // *
       // * These are the methods that can be accessed on off the root DB function. Example dbname.insert;
       // **************************************** 
-      root.settings = function ( n ) {
+      root.settings = function(n) {
         // ****************************************
         // *
         // * Getting and setting for this DB's settings/events
         // **************************************** 
-        if ( n ){
-          settings = SectDB.mergeObj( settings, n );
-          if ( n.template ){
+        if (n) {
+          settings = SectDB.mergeObj(settings, n);
+          if (n.template) {
 
-            root().update( n.template );
+            root().update(n.template);
           }
         }
         return settings;
@@ -1682,28 +1678,136 @@ var SectDB, exports, T;
       // *
       // * These are the methods that can be accessed on off the root DB function. Example dbname.insert;
       // **************************************** 
-      root.store = function ( n ) {
+      root.store = function(n) {
         // ****************************************
-        // *
+        // * Browser
         // * Setup localstorage for this DB on a given name
         // * Pull data into the DB as needed
         // **************************************** 
         var r = false, i;
-        if ( localStorage ){
-          if ( n ){
-            i = localStorage.getItem( 'sectdb_' + n );
-            if ( i && i.length > 0 ){
-              root.insert( i );
+        if (localStorage) {
+          if (n) {
+            i = localStorage.getItem('sectdb_' + n);
+            if (i && i.length > 0) {
+              root.insert(i);
               r = true;
             }
-            if ( TOb.length > 0 ){
-              setTimeout( function () {
-                localStorage.setItem( 'sectdb_' + settings.storageName,
-                  JSON.stringify( TOb ) );
+            if (TOb.length > 0) {
+              setTimeout(function() {
+                localStorage.setItem('sectdb_' + settings.storageName,
+                  JSON.stringify(TOb));
               });
             }
           }
-          root.settings( {storageName : n} );
+          root.settings({ storageName: n });
+        }
+        return root;
+      };
+
+      root.save = function(n) {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB on a given name
+        // * Pull data into the DB as needed
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false, i;
+        if (typeof window === 'undefined') {
+          if (n) {
+            i = utils.nodestorage.get('sectdb_' + n);
+            if (i && i.length > 0) {
+              root.insert(i);
+              r = true;
+            }
+            if (TOb.length > 0) {
+              setTimeout(function() {
+                utils.nodestorage.set('sectdb_' + settings.nodeStorageName,
+                  JSON.stringify(TOb));
+              });
+            }
+          }
+          root.settings({ nodeStorageName: n });
+        }
+        return root;
+      };
+
+      root.overwrite = function(n) {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB on a given name
+        // * Overwrites data into the DB as needed
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false;
+        if (typeof window === 'undefined') {
+          if (n) {
+            if (TOb.length > 0) {
+              setTimeout(function() {
+                utils.nodestorage.set('sectdb_' + n,
+                  JSON.stringify(TOb));
+              });
+            }
+          }
+        }
+        return root;
+      };
+
+      root.load = function(n) {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB on a given name
+        // * Grabs data from the DB as needed
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false, i;
+        if (typeof window === 'undefined') {
+          if (n) {
+            i = utils.nodestorage.get('sectdb_' + n);
+            if (i && i.length > 0) {
+              root.insert(i);
+              r = true;
+            }
+          }
+        }
+        return root;
+      };
+
+      root.delete = function(n) {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB on a given name
+        // * Delete data from the DB as needed
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false;
+        if (typeof window === 'undefined') {
+          if (n) {
+            utils.nodestorage.delete('sectdb_' + n);
+          }
+        }
+        return root;
+      };
+
+      root.clear = function() {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB for all
+        // * Clears all data from the DB
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false;
+        if (typeof window === 'undefined') {
+          utils.nodestorage.clearAll();
         }
         return root;
       };
@@ -1759,10 +1863,10 @@ var SectDB, exports, T;
     // * Purpose: Used to combine objs
     // *
     // ****************************************   
-    SectDB.mergeObj = function ( ob1, ob2 ) {
+    SectDB.mergeObj = function(ob1, ob2) {
       var c = {};
-      eachin( ob1, function ( v, n ) { c[n] = ob1[n]; });
-      eachin( ob2, function ( v, n ) { c[n] = ob2[n]; });
+      eachin(ob1, function(v, n) { c[n] = ob1[n]; });
+      eachin(ob2, function(v, n) { c[n] = ob2[n]; });
       return c;
     };
 
@@ -1776,13 +1880,13 @@ var SectDB, exports, T;
     // * Purpose: Used to comare objects
     // *
     // ****************************************
-    SectDB.has = function ( var1, var2 ) {
+    SectDB.has = function(var1, var2) {
 
       var re = false, n;
 
-      if ( (var1.SectDB) ){
-        re = var1( var2 );
-        if ( re.length > 0 ){
+      if ((var1.SectDB)) {
+        re = var1(var2);
+        if (re.length > 0) {
           return true;
         }
         else {
@@ -1791,14 +1895,13 @@ var SectDB, exports, T;
       }
       else {
 
-        switch ( T.typeOf( var1 ) ){
+        switch (T.typeOf(var1)) {
           case 'object':
-            if ( T.isObject( var2 ) ){
-              eachin( var2, function ( v, n ) {
-                if ( re === true && !T.isUndefined( var1[n] ) &&
-                  var1.hasOwnProperty( n ) )
-                {
-                  re = T.has( var1[n], var2[n] );
+            if (T.isObject(var2)) {
+              eachin(var2, function(v, n) {
+                if (re === true && !T.isUndefined(var1[n]) &&
+                  var1.hasOwnProperty(n)) {
+                  re = T.has(var1[n], var2[n]);
                 }
                 else {
                   re = false;
@@ -1806,16 +1909,16 @@ var SectDB, exports, T;
                 }
               });
             }
-            else if ( T.isArray( var2 ) ){
-              each( var2, function ( v, n ) {
-                re = T.has( var1, var2[n] );
-                if ( re ){
+            else if (T.isArray(var2)) {
+              each(var2, function(v, n) {
+                re = T.has(var1, var2[n]);
+                if (re) {
                   return SectDB.EXIT;
                 }
               });
             }
-            else if ( T.isString( var2 ) ){
-              if ( !SectDB.isUndefined( var1[var2] ) ){
+            else if (T.isString(var2)) {
+              if (!SectDB.isUndefined(var1[var2])) {
                 return true;
               }
               else {
@@ -1824,44 +1927,44 @@ var SectDB, exports, T;
             }
             return re;
           case 'array':
-            if ( T.isObject( var2 ) ){
-              each( var1, function ( v, i ) {
-                re = T.has( var1[i], var2 );
-                if ( re === true ){
+            if (T.isObject(var2)) {
+              each(var1, function(v, i) {
+                re = T.has(var1[i], var2);
+                if (re === true) {
                   return SectDB.EXIT;
                 }
               });
             }
-            else if ( T.isArray( var2 ) ){
-              each( var2, function ( v2, i2 ) {
-                each( var1, function ( v1, i1 ) {
-                  re = T.has( var1[i1], var2[i2] );
-                  if ( re === true ){
+            else if (T.isArray(var2)) {
+              each(var2, function(v2, i2) {
+                each(var1, function(v1, i1) {
+                  re = T.has(var1[i1], var2[i2]);
+                  if (re === true) {
                     return SectDB.EXIT;
                   }
                 });
-                if ( re === true ){
+                if (re === true) {
                   return SectDB.EXIT;
                 }
               });
             }
-            else if ( T.isString( var2 ) || T.isNumber( var2 ) ){
-             re = false;
-              for ( n = 0; n < var1.length; n++ ){
-                re = T.has( var1[n], var2 );
-                if ( re ){
+            else if (T.isString(var2) || T.isNumber(var2)) {
+              re = false;
+              for (n = 0; n < var1.length; n++) {
+                re = T.has(var1[n], var2);
+                if (re) {
                   return true;
                 }
               }
             }
             return re;
           case 'string':
-            if ( T.isString( var2 ) && var2 === var1 ){
+            if (T.isString(var2) && var2 === var1) {
               return true;
             }
             break;
           default:
-            if ( T.typeOf( var1 ) === T.typeOf( var2 ) && var1 === var2 ){
+            if (T.typeOf(var1) === T.typeOf(var2) && var1 === var2) {
               return true;
             }
             break;
@@ -1880,21 +1983,21 @@ var SectDB, exports, T;
     // * Purpose: Used to comare objects
     // *
     // ****************************************
-    SectDB.hasAll = function ( var1, var2 ) {
+    SectDB.hasAll = function(var1, var2) {
 
       var T = SectDB, ar;
-      if ( T.isArray( var2 ) ){
+      if (T.isArray(var2)) {
         ar = true;
-        each( var2, function ( v ) {
-          ar = T.has( var1, v );
-          if ( ar === false ){
+        each(var2, function(v) {
+          ar = T.has(var1, v);
+          if (ar === false) {
             return SectDB.EXIT;
           }
         });
         return ar;
       }
       else {
-        return T.has( var1, var2 );
+        return T.has(var1, var2);
       }
     };
 
@@ -1904,13 +2007,12 @@ var SectDB, exports, T;
     // * typeOf Fixed in JavaScript as public utility
     // *
     // ****************************************
-    SectDB.typeOf = function ( v ) {
+    SectDB.typeOf = function(v) {
       var s = typeof v;
-      if ( s === 'object' ){
-        if ( v ){
-          if ( typeof v.length === 'number' &&
-            !(v.propertyIsEnumerable( 'length' )) )
-          {
+      if (s === 'object') {
+        if (v) {
+          if (typeof v.length === 'number' &&
+            !(v.propertyIsEnumerable('length'))) {
             s = 'array';
           }
         }
@@ -1928,10 +2030,10 @@ var SectDB, exports, T;
     // * Purpose: Used to get the keys for an object
     // *
     // ****************************************   
-    SectDB.getObjectKeys = function ( ob ) {
+    SectDB.getObjectKeys = function(ob) {
       var kA = [];
-      eachin( ob, function ( n, h ) {
-        kA.push( h );
+      eachin(ob, function(n, h) {
+        kA.push(h);
       });
       kA.sort();
       return kA;
@@ -1944,9 +2046,9 @@ var SectDB, exports, T;
     // * Purpose: Used to get the keys for an object
     // *
     // ****************************************   
-    SectDB.isSameArray = function ( ar1, ar2 ) {
-      return (SectDB.isArray( ar1 ) && SectDB.isArray( ar2 ) &&
-        ar1.join( ',' ) === ar2.join( ',' )) ? true : false;
+    SectDB.isSameArray = function(ar1, ar2) {
+      return (SectDB.isArray(ar1) && SectDB.isArray(ar2) &&
+        ar1.join(',') === ar2.join(',')) ? true : false;
     };
 
     // ****************************************
@@ -1957,18 +2059,17 @@ var SectDB, exports, T;
     // * Purpose: Used to comare objects
     // *
     // ****************************************   
-    SectDB.isSameObject = function ( ob1, ob2 ) {
+    SectDB.isSameObject = function(ob1, ob2) {
       var T = SectDB, rv = true;
 
-      if ( T.isObject( ob1 ) && T.isObject( ob2 ) ){
-        if ( T.isSameArray( T.getObjectKeys( ob1 ),
-          T.getObjectKeys( ob2 ) ) )
-        {
-          eachin( ob1, function ( v, n ) {
-            if ( ! ( (T.isObject( ob1[n] ) && T.isObject( ob2[n] ) &&
-              T.isSameObject( ob1[n], ob2[n] )) ||
-              (T.isArray( ob1[n] ) && T.isArray( ob2[n] ) &&
-                T.isSameArray( ob1[n], ob2[n] )) || (ob1[n] === ob2[n]) )
+      if (T.isObject(ob1) && T.isObject(ob2)) {
+        if (T.isSameArray(T.getObjectKeys(ob1),
+          T.getObjectKeys(ob2))) {
+          eachin(ob1, function(v, n) {
+            if (!((T.isObject(ob1[n]) && T.isObject(ob2[n]) &&
+              T.isSameObject(ob1[n], ob2[n])) ||
+              (T.isArray(ob1[n]) && T.isArray(ob2[n]) &&
+                T.isSameArray(ob1[n], ob2[n])) || (ob1[n] === ob2[n]))
             ) {
               rv = false;
               return SectDB.EXIT;
@@ -1995,24 +2096,24 @@ var SectDB, exports, T;
     // ****************************************
 
     typeList = [
-      'String',  'Number', 'Object',   'Array',
-      'Boolean', 'Null',   'Function', 'Undefined'
+      'String', 'Number', 'Object', 'Array',
+      'Boolean', 'Null', 'Function', 'Undefined'
     ];
-  
-    makeTest = function ( thisKey ) {
-      return function ( data ) {
-        return SectDB.typeOf( data ) === thisKey.toLowerCase() ? true : false;
+
+    makeTest = function(thisKey) {
+      return function(data) {
+        return SectDB.typeOf(data) === thisKey.toLowerCase() ? true : false;
       };
     };
-  
-    for ( idx = 0; idx < typeList.length; idx++ ){
+
+    for (idx = 0; idx < typeList.length; idx++) {
       typeKey = typeList[idx];
-      SectDB['is' + typeKey] = makeTest( typeKey );
+      SectDB['is' + typeKey] = makeTest(typeKey);
     }
   }
 }());
 
-if ( typeof(exports) === 'object' ){
+if (typeof (exports) === 'object') {
   exports.sectdb = SectDB;
   exports.SectDB = SectDB;
   exports.SECTDB = SectDB;
