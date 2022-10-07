@@ -5,13 +5,17 @@ const fs = require('fs');
 let STORAGE_CATALOG = './data';
 let STORAGE_PATH = STORAGE_CATALOG + '/data.sectdb';
 
-function updateStoragePath() {
-    STORAGE_PATH = STORAGE_CATALOG + '/data.sectdb'
+function updateStoragePath(path) {
+    if (STORAGE_PATH == "./data/data.sectdb") {
+      STORAGE_PATH = path + '.sectdb'
+    } else {
+      STORAGE_PATH = STORAGE_CATALOG + '/data.sectdb'
+    }
 }
 
 function config(options) {
     STORAGE_CATALOG = options.catalog;
-    updateStoragePath();
+    updateStoragePath(options.path);
 }
 
 class JsonStorage {
