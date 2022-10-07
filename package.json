@@ -1,6 +1,6 @@
 {
   "name": "sectdb",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "SectDB is an free to use JavaScript library that provides powerful in-memory database capabilities to both browser and server applications such as Node.js",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,8 @@
     "memory",
     "cache",
     "browser",
-    "json"
+    "json",
+    "catalog"
   ],
   "author": "Sectly",
   "license": "MPL-2.0",
