@@ -40,8 +40,12 @@ products().first();
 
 // get last record
 products().last();
-Example record manipulation
-// update the price of the Blue Ray Player to 89.99
+```
+
+## Example record manipulation
+
+```js
+// update the price of the Smart Phone X to 89.99
 products({item:1}).update({price:89.99});
 
 // loop over the records and call a function
