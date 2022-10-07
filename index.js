@@ -1705,7 +1705,7 @@ if (typeof window === 'undefined') {
         return root;
       };
 
-      root.save = function(n) {
+      root.save = function(n, c) {
         // ****************************************
         // * Node.js
         // * Setup json storage for this DB on a given name
@@ -1713,6 +1713,9 @@ if (typeof window === 'undefined') {
         // **************************************** 
         if (!utils.nodestorage) {
           return false;
+        }
+        if (c) {
+          utils.config({ name: `${c}`, catalog: `./data` });
         }
         var r = false, i;
         if (typeof window === 'undefined') {
@@ -1734,7 +1737,7 @@ if (typeof window === 'undefined') {
         return root;
       };
 
-      root.overwrite = function(n) {
+      root.overwrite = function(n, c) {
         // ****************************************
         // * Node.js
         // * Setup json storage for this DB on a given name
@@ -1742,6 +1745,9 @@ if (typeof window === 'undefined') {
         // **************************************** 
         if (!utils.nodestorage) {
           return false;
+        }
+        if (c) {
+          utils.config({ name: `${c}`, catalog: `./data` });
         }
         var r = false;
         if (typeof window === 'undefined') {
@@ -1757,7 +1763,7 @@ if (typeof window === 'undefined') {
         return root;
       };
 
-      root.load = function(n) {
+      root.load = function(n, c) {
         // ****************************************
         // * Node.js
         // * Setup json storage for this DB on a given name
@@ -1765,6 +1771,9 @@ if (typeof window === 'undefined') {
         // **************************************** 
         if (!utils.nodestorage) {
           return false;
+        }
+        if (c) {
+          utils.config({ name: `${c}`, catalog: `./data` });
         }
         var r = false, i;
         if (typeof window === 'undefined') {
@@ -1774,6 +1783,24 @@ if (typeof window === 'undefined') {
               root.insert(i);
               r = true;
             }
+          }
+        }
+        return root;
+      };
+
+      root.catalog = function(n) {
+        // ****************************************
+        // * Node.js
+        // * Setup json storage for this DB on a given name
+        // * Sets database catalog and path
+        // **************************************** 
+        if (!utils.nodestorage) {
+          return false;
+        }
+        var r = false;
+        if (typeof window === 'undefined') {
+          if (n) {
+            utils.nodestorage.delete('sectdb_' + n);
           }
         }
         return root;
@@ -1809,24 +1836,6 @@ if (typeof window === 'undefined') {
         var r = false;
         if (typeof window === 'undefined') {
           utils.nodestorage.clearAll();
-        }
-        return root;
-      };
-
-      root.catalog = function(n) {
-        // ****************************************
-        // * Node.js
-        // * Setup json storage for this DB on a given name
-        // * Change name of the DB file
-        // **************************************** 
-        if (!utils.nodestorage) {
-          return false;
-        }
-        var r = false;
-        if (typeof window === 'undefined') {
-          if (n) {
-            utils.config({ catalog: `./data`, path: `./data/${n}`});
-          }
         }
         return root;
       };
