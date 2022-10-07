@@ -13,11 +13,11 @@ Just pass in a JSON array:
 ```js
 var products = SectDB([
   { "item"  : 1,
-    "name"  : "Blue Ray Player",
+    "name"  : "Smart Phone X",
     "price" : 99.99
   },
   { "item"  : 2,
-    "name"  : "3D TV",
+    "name"  : "HD TV",
     "price" : 1799.99
   }
 ]);
@@ -32,8 +32,8 @@ var item1 = products({item:1});
 // where price is less than 100
 var lowPricedItems = products({price:{lt:100}});
 
-// where name is like "Blue Ray"
-var blueRayPlayers = products({name:{like:"Blue Ray"}});
+// where name is like "Smart Phone"
+var Smartphones = products({name:{like:"Smart Phone"}});
 
 // get first record
 products().first();
@@ -51,10 +51,10 @@ products().each(function (r) {alert(r.name)});
 products.sort("price desc");
 
 // select only the item names into an array
-products().select("name"); // returns ["3D TV","Blue Ray Player"]
+products().select("name"); // returns ["HD TV","Smart Phone X"]
 
 // Inject values from a record into a string template.
-// Row value will be set to "<tr><td>3D TV</td><td>17999.99</td></tr>"
+// Row value will be set to "<tr><td>HD TV</td><td>17999.99</td></tr>"
 var row = products({item:2})
   .supplant("<tr><td>{name}</td><td>{price}</td></tr>");
 ```
