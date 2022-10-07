@@ -26,7 +26,7 @@
  white  : true
 */
 
-// Version 1.4.5
+// Version 1.4.6
 
 // Setup SectDB name space to return an object with methods
 var SectDB, exports, T, utils;
@@ -54,7 +54,7 @@ if (typeof window === 'undefined') {
     // TC = Counter for SectDB DBs on page, used for unique IDs
     // cmax = size of charnumarray conversion cache
     // idpad = zeros to pad record IDs with
-    version = '1.4.5';
+    version = '1.4.6';
     TC = 1;
     idpad = '000000';
     cmax = 1000;
@@ -1806,7 +1806,7 @@ if (typeof window === 'undefined') {
         return root;
       };
 
-      root.delete = function(n) {
+      root.delete = function(n, c) {
         // ****************************************
         // * Node.js
         // * Setup json storage for this DB on a given name
@@ -1814,6 +1814,9 @@ if (typeof window === 'undefined') {
         // **************************************** 
         if (!utils.nodestorage) {
           return false;
+        }
+        if (c) {
+          utils.config({ name: `${c}`, catalog: `./data` });
         }
         var r = false;
         if (typeof window === 'undefined') {
@@ -1824,7 +1827,7 @@ if (typeof window === 'undefined') {
         return root;
       };
 
-      root.clear = function() {
+      root.clear = function(c) {
         // ****************************************
         // * Node.js
         // * Setup json storage for this DB for all
@@ -1832,6 +1835,9 @@ if (typeof window === 'undefined') {
         // **************************************** 
         if (!utils.nodestorage) {
           return false;
+        }
+        if (c) {
+          utils.config({ name: `${c}`, catalog: `./data` });
         }
         var r = false;
         if (typeof window === 'undefined') {
