@@ -11,8 +11,6 @@ function updateStoragePath(path) {
   } else {
     STORAGE_PATH = STORAGE_CATALOG + '/data.sectdb';
   }
-
-  console.log(STORAGE_PATH);
 }
 
 function config(options) {
