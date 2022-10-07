@@ -35,6 +35,7 @@ if (typeof window === 'undefined') {
   const { JsonStorage, config } = require("./utils");
   utils.nodestorage = JsonStorage;
   utils.config = config;
+  utils.utils = require("./utils");
 }
 (function() {
   'use strict';
@@ -2118,4 +2119,6 @@ if (typeof (exports) === 'object') {
   exports.SectDB = SectDB;
   exports.SECTDB = SectDB;
   exports.SectlysDatabase = SectDB;
+  exports.utils = utils.utils;
+  exports.Utils = utils.utils;
 }
