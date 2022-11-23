@@ -1,3 +1,5 @@
+# Deprecated: This Project Is Deprecated And Won't Be Updated Please Use: https://github.com/Sectly/suchdb
+
 # SectDB
 SectDB is an free to use JavaScript library that provides powerful in-memory database capabilities to both browser and server applications such as Node.js
 
